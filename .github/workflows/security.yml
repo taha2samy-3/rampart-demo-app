@@ -72,13 +72,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Create reports dir
+        run: mkdir -p reports
       - name: Run Trivy vulnerability scanner (FS)
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'fs'
           scan-ref: '.'
           format: 'sarif'
-          output: 'trivy-fs.sarif'
+          output: 'reports/trivy-fs.sarif'
           severity: 'CRITICAL,HIGH,MEDIUM,LOW'
         continue-on-error: true
       - name: Run Trivy config scanner (IaC / Dockerfile / K8s)
@@ -87,15 +89,15 @@ jobs:
           scan-type: 'config'
           scan-ref: '.'
           format: 'sarif'
-          output: 'trivy-config.sarif'
+          output: 'reports/trivy-config.sarif'
         continue-on-error: true
       - name: Upload Trivy SARIFs
         uses: actions/upload-artifact@v4
         with:
           name: trivy-reports
           path: |
-            trivy-fs.sarif
-            trivy-config.sarif
+            reports/trivy-fs.sarif
+            reports/trivy-config.sarif
 
   # ============================================================================
   # 4. SBOM Generation & Analysis (Syft + Grype)
@@ -105,7 +107,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Generate SBOM (CycloneDX & SPDX) with Syft
+      - name: Prepare reports directory
+        run: mkdir -p reports
+      - name: Generate SBOM (CycloneDX) with Syft
         uses: anchore/sbom-action@v0.17.9
         with:
           path: .
@@ -115,7 +119,6 @@ jobs:
         uses: anchore/sbom-action/download-syft@v0.17.9
       - name: Syft SPDX export
         run: |
-          mkdir -p reports
           syft dir:. -o spdx-json=reports/sbom.spdx.json
       - name: Scan SBOM with Grype
         uses: anchore/scan-action@v5
@@ -141,6 +144,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Create reports dir
+        run: mkdir -p reports
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Build local container image
@@ -151,14 +156,14 @@ jobs:
         with:
           image-ref: 'rampart-demo-app:test'
           format: 'sarif'
-          output: 'trivy-image.sarif'
+          output: 'reports/trivy-image.sarif'
           severity: 'CRITICAL,HIGH,MEDIUM,LOW'
         continue-on-error: true
       - name: Upload Container SARIF
         uses: actions/upload-artifact@v4
         with:
           name: container-sarif
-          path: trivy-image.sarif
+          path: reports/trivy-image.sarif
 
   # ============================================================================
   # 6. Aggregate All Reports into Single Bundle for Rampart

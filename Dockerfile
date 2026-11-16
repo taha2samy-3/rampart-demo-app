@@ -3,7 +3,7 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-COPY package.json ./
+COPY package.json package-lock.json* ./
 RUN npm install
 
 COPY tsconfig.json ./
@@ -18,13 +18,13 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 
+# Copy prebuilt artifacts and node_modules from builder
+COPY --chown=node:node package.json ./
+COPY --from=builder --chown=node:node /app/node_modules ./node_modules
+COPY --from=builder --chown=node:node /app/dist ./dist
+
 # Run as non-root user
 USER node
-
-COPY --chown=node:node package.json ./
-RUN npm install --omit=dev
-
-COPY --from=builder --chown=node:node /app/dist ./dist
 
 EXPOSE 3000
 
