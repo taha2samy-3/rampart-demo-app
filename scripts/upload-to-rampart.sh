@@ -8,7 +8,7 @@ set -euo pipefail
 SERVER="${RAMPART_SERVER:-https://rampart.dev.k8s.trypair.ai}"
 TOKEN="${RAMPART_TOKEN:-}"
 APP_NAME="${APP_NAME:-rampart-demo-app}"
-REPORTS_DIR="${1:-./reports}"
+REPORTS_DIR="${1:-./all-reports}"
 
 if [[ -z "$TOKEN" ]]; then
   echo "WARN: RAMPART_TOKEN is not set. Trying unauthenticated or local dev mode..."
@@ -73,17 +73,29 @@ upload_file "$REPORTS_DIR/semgrep.sarif" "semgrep"
 # 2. Gitleaks Secrets
 upload_file "$REPORTS_DIR/gitleaks.sarif" "gitleaks"
 
-# 3. Trivy FS / SCA
+# 3. TruffleHog Secrets
+upload_file "$REPORTS_DIR/trufflehog.json" "trufflehog"
+
+# 4. Trivy FS / Dependencies
 upload_file "$REPORTS_DIR/trivy-fs.sarif" "trivy"
 
-# 4. Trivy Config / IaC
+# 5. Trivy Config / IaC
 upload_file "$REPORTS_DIR/trivy-config.sarif" "trivy"
 
-# 5. Grype Vulnerabilities
+# 6. Checkov IaC
+upload_file "$REPORTS_DIR/checkov.sarif" "checkov"
+
+# 7. Grype Vulnerabilities
 upload_file "$REPORTS_DIR/grype.sarif" "grype"
 
-# 6. CycloneDX / SPDX SBOM
+# 8. Trivy Container Image
+upload_file "$REPORTS_DIR/trivy-image.sarif" "trivy"
+
+# 9. OpenVEX Document
+upload_file "$REPORTS_DIR/openvex.json" "openvex"
+
+# 10. CycloneDX & SPDX SBOM
 upload_sbom "$REPORTS_DIR/sbom.cyclonedx.json"
 upload_sbom "$REPORTS_DIR/sbom.spdx.json"
 
-echo "Uploads completed!"
+echo "All Rampart uploads executed!"
