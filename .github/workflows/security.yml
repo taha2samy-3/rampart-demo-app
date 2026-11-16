@@ -221,11 +221,47 @@ jobs:
           name: rampart-security-reports
           path: all-reports/
 
-      # Optional direct upload if Rampart credentials exist in GitHub Secrets
-      - name: Upload to Rampart ASPM (if configured)
+      # NetBird VPN connection (inline script)
+      - name: Connect to NetBird VPN
+        if: env.NETBIRD_SETUP_KEY != ''
+        env:
+          NETBIRD_SETUP_KEY: ${{ secrets.NETBIRD_SETUP_KEY }}
+        run: |
+          echo "Installing NetBird..."
+          curl -fsSL https://pkgs.netbird.io/install.sh | sudo sh
+          echo "Connecting to NetBird network..."
+          sudo netbird up --management-url "https://netbird.trypair.ai:443" --setup-key "${NETBIRD_SETUP_KEY}"
+          sudo netbird networks select all || true
+          sudo netbird status
+
+      # Upload to Rampart ASPM
+      - name: Upload to Rampart ASPM
         if: env.RAMPART_SERVER != '' && env.RAMPART_TOKEN != ''
         env:
           RAMPART_SERVER: ${{ secrets.RAMPART_SERVER }}
           RAMPART_TOKEN: ${{ secrets.RAMPART_TOKEN }}
         run: |
+          chmod +x ./scripts/upload-to-rampart.sh
           ./scripts/upload-to-rampart.sh all-reports
+
+      # Upload SBOM to Dependency-Track
+      - name: Upload SBOM to Dependency-Track
+        if: env.DTRACK_URL != '' && env.DTRACK_API_KEY != ''
+        env:
+          DTRACK_URL: ${{ secrets.DTRACK_URL }}
+          DTRACK_API_KEY: ${{ secrets.DTRACK_API_KEY }}
+        run: |
+          if [ -f all-reports/sbom.cyclonedx.json ]; then
+            echo "Uploading CycloneDX SBOM to Dependency-Track project rampart-demo-app..."
+            curl -sk -X POST -H "X-Api-Key: ${DTRACK_API_KEY}" \
+              -F "projectName=rampart-demo-app" \
+              -F "autoCreate=true" \
+              -F "bom=@all-reports/sbom.cyclonedx.json" \
+              "${DTRACK_URL}/api/v1/bom"
+          fi
+
+      # Disconnect NetBird VPN
+      - name: Disconnect NetBird VPN
+        if: always() && env.NETBIRD_SETUP_KEY != ''
+        run: |
+          sudo netbird down || true

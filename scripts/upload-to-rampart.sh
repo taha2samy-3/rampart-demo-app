@@ -71,7 +71,11 @@ mkdir -p "$REPORTS_DIR"
 upload_file "$REPORTS_DIR/semgrep.sarif" "semgrep"
 
 # 2. Gitleaks Secrets
-upload_file "$REPORTS_DIR/gitleaks.sarif" "gitleaks"
+if [[ -f "$REPORTS_DIR/gitleaks.json" ]]; then
+  upload_file "$REPORTS_DIR/gitleaks.json" "gitleaks"
+elif [[ -f "$REPORTS_DIR/gitleaks.sarif" ]]; then
+  upload_file "$REPORTS_DIR/gitleaks.sarif" "sarif"
+fi
 
 # 3. TruffleHog Secrets
 upload_file "$REPORTS_DIR/trufflehog.json" "trufflehog"
