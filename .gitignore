@@ -1,0 +1,11 @@
+node_modules/
+dist/
+coverage/
+*.log
+.env
+reports/
+*.sarif
+*.json
+!package.json
+!tsconfig.json
+!artifacthub-repo.yml
