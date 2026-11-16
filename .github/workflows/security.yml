@@ -45,8 +45,13 @@ jobs:
           fetch-depth: 0
       - name: Create reports dir
         run: mkdir -p reports
-      - name: Run Gitleaks (SARIF)
+      - name: Run Gitleaks (JSON & SARIF)
         run: |
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest detect \
+            --source="/repo" \
+            --report-path="/repo/reports/gitleaks.json" \
+            --report-format="json" \
+            --redact || true
           docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest detect \
             --source="/repo" \
             --report-path="/repo/reports/gitleaks.sarif" \
@@ -60,6 +65,7 @@ jobs:
         with:
           name: secrets-reports
           path: |
+            reports/gitleaks.json
             reports/gitleaks.sarif
             reports/trufflehog.json
 

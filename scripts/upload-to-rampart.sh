@@ -62,7 +62,7 @@ upload_sbom() {
     "${auth_header[@]}" \
     -F "file=@$file" \
     -F "app=$APP_NAME" \
-    "$SERVER/api/v1/sbom/upload" || true
+    "$SERVER/ingest/v1/sbom" || true
 }
 
 mkdir -p "$REPORTS_DIR"
